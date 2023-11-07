@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Follow;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -36,10 +37,11 @@ class UserController extends Controller
         ]);
 
         $incomingFields['password'] = bcrypt($incomingFields['password']);
+        $incomingFields['avatar'] = null;
         
         $newUser = User::create($incomingFields);
         auth()->login($newUser);
-        return redirect('/')->with('success', 'Thank you for creating an account!');
+        return back()->with('success', 'Thank you for creating an account!');
     }
 
     public function showCorrectHomepage() {
@@ -51,7 +53,12 @@ class UserController extends Controller
     }
 
     public function profile(User $user) {
-        return view('profile-posts',['username' => $user->username, 'posts' =>$user->posts()->latest()->get()]);
+        $currentlyFollowing = 0;
+
+        if (auth()->check()) {
+            $currentlyFollowing = Follow::where([['user_id', '=', auth()->user()->id], ['followeduser', '=', $user->id]])->count();
+        }
+        return view('profile-posts',['avatar'=> $user->avatar,'username' => $user->username, 'posts' =>$user->posts()->latest()->get(), 'currentlyFollowing'=>$currentlyFollowing]);
     }
 
     public function showAvatarForm(User $user) {
@@ -69,9 +76,16 @@ class UserController extends Controller
         $imageResized = Image::make($request->file('avatar'))->fit(300)->encode('jpg');
         Storage::put('public/avatars/' . $filename, $imageResized);
 
+        $oldAvatar = $user->avatar;
+        
         $user->avatar = $filename;
         $user->save();
+
+        if ($oldAvatar != "/null-avatar.jpg") {
+            Storage::delete(str_replace('/storage/','public/', $oldAvatar));
+        }
         
         return redirect('/manage-avatar')->with('success', 'Avatar successfully saved!');
     }
+ 
 }
