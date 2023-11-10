@@ -33,6 +33,9 @@ Route::post('/logout', [UserController::class, 'logout'])->middleware('auth');
 Route::get('/profile/{user:username}', [UserController::class, "profile"]);
 Route::get('/manage-avatar', [UserController::class, "showAvatarForm"])->middleware('login');
 Route::post('/manage-avatar', [UserController::class, "storeAvatar"])->middleware('login');
+// Profile > Follow
+Route::get('/profile/{user:username}/followers', [UserController::class, "profileFollowers"]);
+Route::get('/profile/{user:username}/following', [UserController::class, "profileFollowing"]);
 
 // Follow
 Route::post('/create-follow/{user:username}', [FollowController::class, "createFollow"])->middleware('login');
